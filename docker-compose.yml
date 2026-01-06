@@ -39,6 +39,8 @@ services:
         condition: service_healthy
       somleng-switch:
         condition: service_healthy
+      rating-engine-api:
+        condition: service_healthy
     networks:
       default:
         aliases:
