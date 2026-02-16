@@ -152,8 +152,8 @@ services:
 
   somleng-switch:
     build:
-      context: .
-      dockerfile: Dockerfile.switch-patch
+        context: .
+        dockerfile: Dockerfile.switch-patch
     environment:
       AHN_CORE_HOST: freeswitch
       AHN_CORE_HTTP_PORT: 8080
@@ -179,10 +179,8 @@ services:
     environment:
       - FS_DATABASE_HOST=db
       - FS_MOD_JSON_CDR_URL=http://api.somleng.dev:3000/services/call_data_records
-      - FS_EXTERNAL_SIP_IP=5.30.125.25
-      - FS_EXTERNAL_RTP_IP=5.30.125.25
-    volumes:
-      - ./nat_gateway.xml:/etc/freeswitch/sip_profiles/nat_gateway.xml
+      - FS_EXTERNAL_SIP_IP=52.57.13.107
+      - FS_EXTERNAL_RTP_IP=52.57.13.107
     ports:
       - "5060:5060/udp"
     depends_on:
