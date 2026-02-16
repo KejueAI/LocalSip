@@ -8,7 +8,7 @@ class DialString
   end
 
   def to_s
-    "{sofia_suppress_url_encoding=true,sip_from_host=#{destination_host}}sofia/#{external_profile}/#{address}"
+    "{sofia_suppress_url_encoding=true,sip_invite_domain=#{destination_host}}sofia/#{external_profile}/#{address}"
   end
 
   def address
