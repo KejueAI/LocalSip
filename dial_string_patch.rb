@@ -22,7 +22,7 @@ class DialString
   private
 
   def destination_host
-    address.split("@").last
+    address.split("@").last.split(":").first
   end
 
   def routing_parameters
