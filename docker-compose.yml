@@ -179,8 +179,10 @@ services:
     environment:
       - FS_DATABASE_HOST=db
       - FS_MOD_JSON_CDR_URL=http://api.somleng.dev:3000/services/call_data_records
-      - FS_EXTERNAL_SIP_IP=52.57.13.107
-      - FS_EXTERNAL_RTP_IP=52.57.13.107
+      - FS_EXTERNAL_SIP_IP=3.77.232.33
+      - FS_EXTERNAL_RTP_IP=3.77.232.33
+    volumes:
+      - ./nat_gateway.xml:/etc/freeswitch/sip_profiles/nat_gateway.xml
     ports:
       - "5060:5060/udp"
     depends_on:
