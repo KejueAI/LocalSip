@@ -3,7 +3,7 @@
     <X-PRE-PROCESS cmd="include" data="shared/settings.xml"/>
 
     <param name="sip-port" value="${ext_profile_nat_gateway_sip_port}"/>
-    <param name="ext-sip-ip" value="${FS_EXTERNAL_SIP_IP}"/>
-    <param name="ext-rtp-ip" value="${FS_EXTERNAL_RTP_IP}"/>
+    <param name="ext-sip-ip" value="${ext_profile_nat_gateway_ip}"/>
+    <param name="ext-rtp-ip" value="${ext_profile_nat_gateway_ip}"/>
   </settings>
 </profile>
