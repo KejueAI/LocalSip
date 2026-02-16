@@ -1,0 +1,2 @@
+FROM ghcr.io/somleng/switch-app
+COPY call_controller_patch.rb /app/app/call_controllers/call_controller.rb
