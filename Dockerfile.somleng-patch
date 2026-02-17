@@ -3,6 +3,18 @@ COPY somleng_patches/app/controllers/carrier_api/v1/sip_trunks_controller.rb /ra
 COPY somleng_patches/app/serializers/carrier_api/sip_trunk_serializer.rb /rails/app/serializers/carrier_api/sip_trunk_serializer.rb
 COPY somleng_patches/app/request_schemas/carrier_api/sip_trunk_request_schema.rb /rails/app/request_schemas/carrier_api/sip_trunk_request_schema.rb
 COPY somleng_patches/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb /rails/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb
+COPY somleng_patches/app/workflows/create_sip_trunk.rb /rails/app/workflows/create_sip_trunk.rb
+COPY somleng_patches/app/workflows/update_sip_trunk.rb /rails/app/workflows/update_sip_trunk.rb
+COPY somleng_patches/app/workflows/delete_sip_trunk.rb /rails/app/workflows/delete_sip_trunk.rb
+COPY somleng_patches/config/initializers/sip_trunk_outbound_registration.rb /rails/config/initializers/sip_trunk_outbound_registration.rb
+COPY somleng_patches/app/forms/sip_trunk_form.rb /rails/app/forms/sip_trunk_form.rb
+COPY somleng_patches/app/controllers/dashboard/sip_trunks_controller.rb /rails/app/controllers/dashboard/sip_trunks_controller.rb
+COPY somleng_patches/app/views/dashboard/sip_trunks/_form.html.erb /rails/app/views/dashboard/sip_trunks/_form.html.erb
+COPY somleng_patches/app/views/dashboard/sip_trunks/show.html.erb /rails/app/views/dashboard/sip_trunks/show.html.erb
+COPY somleng_patches/app/javascript/controllers/sip_trunks_controller.js /rails/app/javascript/controllers/sip_trunks_controller.js
+COPY somleng_patches/app/models/routing_parameters.rb /rails/app/models/routing_parameters.rb
+COPY somleng_patches/app/request_schemas/services/inbound_phone_call_request_schema.rb /rails/app/request_schemas/services/inbound_phone_call_request_schema.rb
+COPY somleng_patches/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb /rails/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb
 USER root
 RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /rails/config/routes.rb
 USER rails
