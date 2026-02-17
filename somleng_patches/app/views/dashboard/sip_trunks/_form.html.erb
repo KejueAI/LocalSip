@@ -1,0 +1,168 @@
+<div class="card-body">
+  <%= simple_form_for([:dashboard, resource], html: { data: { controller: "sip-trunks" } }) do |f| %>
+    <% form = SIPTrunkFormDecorator.new(f.object) %>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">General</h5>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%=
+              f.input(
+                :authentication_mode,
+                as: :radio_buttons,
+                checked: resource.authentication_mode || SIPTrunk.authentication_mode.values.first,
+                wrapper: :vertical_collection_inline,
+                hint: "If you have a dedicated public static IP address you may choose 'IP address', otherwise choose 'Client credentials'",
+                input_html: {
+                  data: {
+                    sip_trunks_target: "authenticationModeInput",
+                    action: "click->sip-trunks#toggleAuthenticationMode"
+                  }
+                }
+              )
+            %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input :name, placeholder: "Main SIP Trunk", maxlength: 128, hint: "A friendly name for the SIP Trunk" %>
+          </div>
+
+          <div class="col-sm-6">
+            <%= f.input :max_channels, as: :integer, hint: "The maximum number of channels/concurrent calls. Leave blank for unlimited channels" %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input(
+              :region,
+              collection: resource.region_options_for_select,
+              include_blank: false,
+              selected: f.object.region&.alias,
+              hint: "Select the closest region. The following IP address will be used for media and signaling when connecting to your SIP trunk in the <strong><span class=\"region-name\"></span></strong> region: <strong><span class=\"ip-address\"></strong>. Please make sure it's allowed on your firewall.".html_safe,
+              hint_html: { class: "region-hint", data: { sip_trunks_target: "regionHint", ip_address_target: ".ip-address", region_name_target: ".region-name" } },
+              input_html: {
+                data: {
+                  sip_trunks_target: "regionInput",
+                  action: "change->sip-trunks#toggleRegion",
+                }
+              }
+            ) %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3" data-sip-trunks-target="outboundRegistrationSection">
+      <div class="card-body">
+        <h5 class="card-title">Registration Credentials</h5>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input :username, placeholder: "sip_username", hint: "The SIP username for registering with the remote PBX" %>
+          </div>
+
+          <div class="col-sm-6">
+            <%= f.input :password, as: :string, placeholder: "sip_password", hint: "The SIP password for registering with the remote PBX" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Inbound Dialing</h5>
+
+        <div class="row">
+          <div class="col-sm-6" data-sip-trunks-target="ipAddressAuthenticationSection">
+            <%= f.input(
+                :source_ip_addresses,
+                as: :text,
+                placeholder: "175.100.7.240, 175.100.7.241",
+                hint: "A comma separated list of source IP addresses.",
+                input_html: { value: form.source_ip_addresses_formatted }
+              )
+            %>
+          </div>
+
+          <div class="col-sm-6">
+            <%= f.input(
+                :country,
+                label: "Default country code",
+                format: :with_dialing_country_code,
+                include_blank: true,
+                input_html: {
+                  data: {
+                    sip_trunks_target: "countrySelectInput",
+                    selected_country: resource.country,
+                    default_country: current_carrier.country_code
+                  }
+                },
+                hint: "Set the default country code of the caller. Required if the caller's number is sent in national format instead of E.164"
+              )
+            %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Outbound Dialing</h5>
+
+        <div class="row">
+          <div class="col-sm-6" data-sip-trunks-target="ipAddressAuthenticationSection">
+            <%= f.input :host, placeholder: "sip.example.com:5061", hint: "Can be either an IP Address or FQDN" %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input(
+              :route_prefixes,
+              as: :text,
+              placeholder: "#{resource.carrier.country.country_code}15, #{resource.carrier.country.country_code}16",
+              hint: "An optional comma separated list of route prefixes. Must include the country code.",
+              input_html: { value: form.route_prefixes_formatted }
+            ) %>
+          </div>
+
+          <div class="col-sm-6">
+            <%=
+              f.input(
+                :dial_string_prefix,
+                as: :numeric,
+                hint: "Numeric prefix applied to the beginning of the dial string"
+              ) %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input(
+                :default_sender,
+                hint: "The caller ID shown for outbound calls when there is otherwise no caller ID specified. Must be a phone number in E.164 format or shortcode. e.g. +1 (234) 234-5678 or 732873"
+              )
+            %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <%= f.input :national_dialing, as: :boolean, wrapper: :custom_boolean_switch, hint: "Formats the dial string in national dialing format instead of E.164" %>
+          </div>
+
+          <div class="col-sm-6">
+            <%= f.input :plus_prefix, as: :boolean, wrapper: :custom_boolean_switch, hint: "Prefixes the dial string with a plus (+)." %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%= f.button :submit %>
+  <% end %>
+</div>

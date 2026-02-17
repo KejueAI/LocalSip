@@ -8,7 +8,11 @@ class DialString
   end
 
   def to_s
-    "{sofia_suppress_url_encoding=true,sip_invite_domain=#{destination_host}}sofia/#{external_profile}/#{address}"
+    if outbound_registration?
+      "sofia/gateway/#{gateway_name}/#{formatted_destination}"
+    else
+      "{sofia_suppress_url_encoding=true,sip_invite_domain=#{destination_host}}sofia/#{external_profile}/#{address}"
+    end
   end
 
   def address
@@ -20,6 +24,18 @@ class DialString
   end
 
   private
+
+  def outbound_registration?
+    options[:authentication_mode] == "outbound_registration"
+  end
+
+  def gateway_name
+    options.fetch(:gateway_name)
+  end
+
+  def formatted_destination
+    routing_parameters.format_number(options.fetch(:destination)).gsub(/\D/, "")
+  end
 
   def destination_host
     address.split("@").last.split(":").first

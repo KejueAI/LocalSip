@@ -7,6 +7,11 @@ COPY somleng_patches/app/workflows/create_sip_trunk.rb /rails/app/workflows/crea
 COPY somleng_patches/app/workflows/update_sip_trunk.rb /rails/app/workflows/update_sip_trunk.rb
 COPY somleng_patches/app/workflows/delete_sip_trunk.rb /rails/app/workflows/delete_sip_trunk.rb
 COPY somleng_patches/config/initializers/sip_trunk_outbound_registration.rb /rails/config/initializers/sip_trunk_outbound_registration.rb
+COPY somleng_patches/app/forms/sip_trunk_form.rb /rails/app/forms/sip_trunk_form.rb
+COPY somleng_patches/app/controllers/dashboard/sip_trunks_controller.rb /rails/app/controllers/dashboard/sip_trunks_controller.rb
+COPY somleng_patches/app/views/dashboard/sip_trunks/_form.html.erb /rails/app/views/dashboard/sip_trunks/_form.html.erb
+COPY somleng_patches/app/views/dashboard/sip_trunks/show.html.erb /rails/app/views/dashboard/sip_trunks/show.html.erb
+COPY somleng_patches/app/javascript/controllers/sip_trunks_controller.js /rails/app/javascript/controllers/sip_trunks_controller.js
 USER root
 RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /rails/config/routes.rb
 USER rails
