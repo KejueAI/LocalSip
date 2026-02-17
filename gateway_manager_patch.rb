@@ -33,14 +33,14 @@ module SomlengAdhearsion
         params_xml << %(<param name="expire-seconds" value="3600"/>)
         params_xml << %(<param name="retry-seconds" value="30"/>)
 
-        vars_xml = []
-        vars_xml << %(<variable name="somleng_gateway_id" value="#{name}" direction="inbound"/>)
-
-        inner = (params_xml + vars_xml).map { |p| "      #{p}" }.join("\n")
+        inner_params = params_xml.map { |p| "      #{p}" }.join("\n")
         gateway_xml = <<~XML
           <include>
             <gateway name="#{name}">
-          #{inner}
+          #{inner_params}
+              <variables>
+                <variable name="somleng_gateway_id" value="#{name}" direction="inbound"/>
+              </variables>
             </gateway>
           </include>
         XML
