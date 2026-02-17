@@ -9,15 +9,10 @@ class DialString
 
   def to_s
     if outbound_registration?
-      # Route through the profile directly (like IP auth), not through the gateway.
-      # The gateway only maintains registration. Auth credentials are passed as
-      # channel variables in case the remote PBX challenges the INVITE.
+      # Route through the gateway so FreeSWITCH handles 401 digest auth automatically.
+      # Override the Request-URI to use the hostname (not resolved IP) and correct port.
       host = outbound_host_name
-      vars = ["sofia_suppress_url_encoding=true", "sip_invite_domain=#{host}"]
-      auth_username = options[:auth_user].presence || options[:username]
-      vars << "sip_auth_username=#{auth_username}" if auth_username.present?
-      vars << "sip_auth_password=#{options[:password]}" if options[:password].present?
-      "{#{vars.join(',')}}sofia/#{external_profile}/#{formatted_destination}@#{outbound_host}"
+      "{sip_invite_req_uri=sip:#{formatted_destination}@#{host},sip_invite_domain=#{host}}sofia/gateway/#{gateway_name}/#{formatted_destination}"
     else
       "{sofia_suppress_url_encoding=true,sip_invite_domain=#{destination_host}}sofia/#{external_profile}/#{address}"
     end
