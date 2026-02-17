@@ -16,5 +16,4 @@ COPY somleng_patches/app/models/routing_parameters.rb /rails/app/models/routing_
 COPY somleng_patches/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb /rails/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb
 USER root
 RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /rails/config/routes.rb
-RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
 USER rails
