@@ -55,12 +55,13 @@ module Services
     rule(:from) do |context:|
       next if context[:sip_trunk].blank?
 
-      context[:from] = context.fetch(:sip_trunk).normalize_number(value)
-      unless phone_number_validator.valid?(context[:from])
-        key.failure(
-          "is invalid. It must be an E.164 formatted phone number and must include the country code"
-        )
-        error_log_messages << "From #{context[:from]} is invalid. It must be an E.164 formatted phone number and must include the country code"
+      normalized = context.fetch(:sip_trunk).normalize_number(value)
+      if phone_number_validator.valid?(normalized)
+        context[:from] = normalized
+      else
+        # For gateway-originated calls, accept the raw caller ID as-is
+        # (PBX extensions like "6703" aren't E.164 but are valid caller IDs)
+        context[:from] = value
       end
     end
 
