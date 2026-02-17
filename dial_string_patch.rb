@@ -9,7 +9,7 @@ class DialString
 
   def to_s
     if outbound_registration?
-      "sofia/gateway/#{gateway_name}/#{formatted_destination}"
+      "{sip_route_uri=sip:#{outbound_host}}sofia/gateway/#{gateway_name}/#{formatted_destination}"
     else
       "{sofia_suppress_url_encoding=true,sip_invite_domain=#{destination_host}}sofia/#{external_profile}/#{address}"
     end
@@ -31,6 +31,10 @@ class DialString
 
   def gateway_name
     options.fetch(:gateway_name)
+  end
+
+  def outbound_host
+    options.fetch(:host)
   end
 
   def formatted_destination
