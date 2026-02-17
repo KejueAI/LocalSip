@@ -61,6 +61,8 @@ Returns all SIP trunks belonging to the authenticated carrier.
         "inbound_country": "US",
         "inbound_source_ips": ["203.0.113.1"],
         "outbound_host": "pbx.example.com:5060",
+        "outbound_proxy": null,
+        "auth_user": null,
         "outbound_dial_string_prefix": null,
         "outbound_national_dialing": false,
         "outbound_plus_prefix": false,
@@ -115,13 +117,20 @@ POST /carrier/v1/sip_trunks
       "region": "hydrogen",
       "username": "myuser",
       "password": "mypassword",
-      "outbound_host": "pbx.example.com:5060"
+      "outbound_host": "pbx.example.com:5060",
+      "outbound_proxy": null,
+      "auth_user": null
     }
   }
 }
 ```
 
 When using `outbound_registration`, Somleng will create a FreeSWITCH gateway that actively sends SIP REGISTER to the specified `outbound_host`. Once registered, outbound calls can be routed through this trunk.
+
+**Optional registration fields:**
+
+- `outbound_proxy`: A proxy used to reach your SIP server for registration. Most often unset, but may be used if you need to register as `alice@trunk.com` using `proxy.trunk.com` as the network hop. When set, SIP REGISTER and INVITE messages are sent via this proxy instead of directly to `outbound_host`.
+- `auth_user`: The authentication username, if different from the SIP `username`. Most often unset. Use this when the SIP identity (From header) differs from the credentials used in digest authentication.
 
 #### Attributes
 
@@ -136,7 +145,9 @@ When using `outbound_registration`, Somleng will create a FreeSWITCH gateway tha
 | `default_sender` | string | No | Default sender/caller ID. |
 | `username` | string | Conditional | SIP username. Required for `outbound_registration`. Auto-generated for `client_credentials`. |
 | `password` | string | Conditional | SIP password. Required for `outbound_registration`. Auto-generated for `client_credentials`. |
-| `outbound_host` | string | Conditional | Hostname or IP (with optional port) of the outbound destination. Required for `outbound_registration`. Format: `host` or `host:port`. |
+| `outbound_host` | string | Conditional | The SIP server to register with. Required for `outbound_registration`. Format: `host` or `host:port`. Used as the SIP realm (domain identity in From header). |
+| `outbound_proxy` | string or null | No | A proxy used to reach your SIP server for registration. When set, SIP messages are routed via this proxy instead of directly to `outbound_host`. Format: `host` or `host:port`. Max 100 chars. |
+| `auth_user` | string or null | No | The authentication username for digest auth, if different from `username`. Max 60 chars. |
 | `outbound_dial_string_prefix` | string | No | Prefix prepended to the dial string for outbound calls. |
 | `outbound_national_dialing` | boolean | No | Whether to use national dialing format for outbound calls. |
 | `outbound_plus_prefix` | boolean | No | Whether to prepend `+` to outbound dial strings. |
@@ -189,7 +200,7 @@ PATCH /carrier/v1/sip_trunks/:id
 
 All attributes are optional on update. The same validation rules from creation apply. Only the provided attributes are updated.
 
-When updating an `outbound_registration` trunk's `username`, `password`, or `outbound_host`, the FreeSWITCH gateway is automatically recreated with the new credentials.
+When updating an `outbound_registration` trunk's `username`, `password`, `outbound_host`, `outbound_proxy`, or `auth_user`, the FreeSWITCH gateway is automatically recreated with the new configuration.
 
 When switching `authentication_mode` between modes, the old mode's resources are cleaned up and the new mode's resources are created.
 
