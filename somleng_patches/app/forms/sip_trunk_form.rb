@@ -122,4 +122,5 @@ class SIPTrunkForm
       return errors.add(:source_ip_addresses, :invalid) unless Resolv::IPv4::Regex.match?(ip)
     end
   end
+
 end
