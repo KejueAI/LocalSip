@@ -15,6 +15,7 @@ class RoutingParameters
       host: sip_trunk.outbound_host,
       username: sip_trunk.username,
       password: sip_trunk.password,
+      auth_user: sip_trunk.auth_user,
       sip_profile: sip_trunk.sip_profile,
       authentication_mode: sip_trunk.authentication_mode,
       gateway_name: sip_trunk.id

@@ -14,7 +14,8 @@ class DialString
       # channel variables in case the remote PBX challenges the INVITE.
       host = outbound_host_name
       vars = ["sofia_suppress_url_encoding=true", "sip_invite_domain=#{host}"]
-      vars << "sip_auth_username=#{options[:username]}" if options[:username].present?
+      auth_username = options[:auth_user].presence || options[:username]
+      vars << "sip_auth_username=#{auth_username}" if auth_username.present?
       vars << "sip_auth_password=#{options[:password]}" if options[:password].present?
       "{#{vars.join(',')}}sofia/#{external_profile}/#{formatted_destination}@#{outbound_host}"
     else

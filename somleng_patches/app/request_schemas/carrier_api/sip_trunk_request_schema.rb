@@ -77,7 +77,9 @@ module CarrierAPI
       result[:password] = params.fetch(:password) if params.key?(:password)
       result[:outbound_host] = params.fetch(:outbound_host) if params.key?(:outbound_host)
       result[:outbound_proxy] = params.fetch(:outbound_proxy) if params.key?(:outbound_proxy)
-      result[:auth_user] = params.fetch(:auth_user) if params.key?(:auth_user)
+      if params.fetch(:authentication_mode) == "outbound_registration"
+        result[:auth_user] = params.key?(:auth_user) && params[:auth_user].present? ? params[:auth_user] : params[:username]
+      end
       result[:outbound_dial_string_prefix] = params.fetch(:outbound_dial_string_prefix) if params.key?(:outbound_dial_string_prefix)
       result[:outbound_national_dialing] = params.fetch(:outbound_national_dialing) if params.key?(:outbound_national_dialing)
       result[:outbound_plus_prefix] = params.fetch(:outbound_plus_prefix) if params.key?(:outbound_plus_prefix)

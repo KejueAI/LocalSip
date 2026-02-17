@@ -103,7 +103,7 @@ class SIPTrunkForm
       attrs[:username] = username
       attrs[:password] = password
       attrs[:outbound_proxy] = outbound_proxy.to_s.strip.presence
-      attrs[:auth_user] = auth_user.to_s.strip.presence
+      attrs[:auth_user] = auth_user.to_s.strip.presence || username
     end
 
     sip_trunk.attributes = attrs
