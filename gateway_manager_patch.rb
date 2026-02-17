@@ -18,18 +18,26 @@ module SomlengAdhearsion
         password = gateway_params.fetch("password")
         realm = gateway_params.fetch("realm")
         proxy = gateway_params.fetch("proxy")
+        outbound_proxy = gateway_params.fetch("outbound_proxy", proxy)
+        auth_username = gateway_params["auth_username"]
 
+        params_xml = []
+        params_xml << %(<param name="username" value="#{username}"/>)
+        params_xml << %(<param name="password" value="#{password}"/>)
+        params_xml << %(<param name="realm" value="#{realm}"/>)
+        params_xml << %(<param name="proxy" value="#{proxy}"/>)
+        params_xml << %(<param name="outbound-proxy" value="#{outbound_proxy}"/>) if outbound_proxy
+        params_xml << %(<param name="auth-username" value="#{auth_username}"/>) if auth_username
+        params_xml << %(<param name="register" value="true"/>)
+        params_xml << %(<param name="register-transport" value="udp"/>)
+        params_xml << %(<param name="expire-seconds" value="3600"/>)
+        params_xml << %(<param name="retry-seconds" value="30"/>)
+
+        inner = params_xml.map { |p| "      #{p}" }.join("\n")
         gateway_xml = <<~XML
           <include>
             <gateway name="#{name}">
-              <param name="username" value="#{username}"/>
-              <param name="password" value="#{password}"/>
-              <param name="realm" value="#{realm}"/>
-              <param name="proxy" value="#{proxy}"/>
-              <param name="register" value="true"/>
-              <param name="register-transport" value="udp"/>
-              <param name="expire-seconds" value="3600"/>
-              <param name="retry-seconds" value="30"/>
+          #{inner}
             </gateway>
           </include>
         XML

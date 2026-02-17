@@ -28,6 +28,8 @@ class SIPTrunkForm
 
   attribute :username
   attribute :password
+  attribute :outbound_proxy
+  attribute :auth_user
 
   enumerize :authentication_mode, in: SIPTrunk.authentication_mode.values
 
@@ -64,6 +66,8 @@ class SIPTrunkForm
       default_sender: sip_trunk.default_sender,
       username: sip_trunk.username,
       password: sip_trunk.password,
+      outbound_proxy: sip_trunk.outbound_proxy,
+      auth_user: sip_trunk.auth_user,
     )
   end
 
@@ -98,6 +102,8 @@ class SIPTrunkForm
     if authentication_mode.outbound_registration?
       attrs[:username] = username
       attrs[:password] = password
+      attrs[:outbound_proxy] = outbound_proxy.to_s.strip.presence
+      attrs[:auth_user] = auth_user.to_s.strip.presence
     end
 
     sip_trunk.attributes = attrs

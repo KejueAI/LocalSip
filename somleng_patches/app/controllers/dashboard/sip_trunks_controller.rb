@@ -51,7 +51,7 @@ module Dashboard
         :source_ip_addresses, :country,
         :host, :dial_string_prefix, :national_dialing,
         :plus_prefix, :route_prefixes, :default_sender,
-        :username, :password
+        :username, :password, :outbound_proxy, :auth_user
       )
     end
 

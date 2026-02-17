@@ -60,6 +60,16 @@
           <%= f.attribute :password do %>
             <%= mask_content(sip_trunk.password) %>
           <% end %>
+          <% if sip_trunk.auth_user.present? %>
+            <%= f.attribute :auth_user, label: "Auth User" do %>
+              <code><%= sip_trunk.auth_user %></code>
+            <% end %>
+          <% end %>
+          <% if sip_trunk.outbound_proxy.present? %>
+            <%= f.attribute :outbound_proxy, label: "Outbound Proxy" do %>
+              <code><%= sip_trunk.outbound_proxy %></code>
+            <% end %>
+          <% end %>
         </div>
       </div>
     <% end %>

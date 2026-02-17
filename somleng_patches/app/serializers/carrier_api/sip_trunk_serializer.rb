@@ -1,7 +1,8 @@
 module CarrierAPI
   class SIPTrunkSerializer < ResourceSerializer
     attributes :name, :authentication_mode, :region, :max_channels, :default_sender,
-               :outbound_host, :outbound_dial_string_prefix, :outbound_national_dialing,
+               :outbound_host, :outbound_proxy, :auth_user,
+               :outbound_dial_string_prefix, :outbound_national_dialing,
                :outbound_plus_prefix, :outbound_route_prefixes
 
     attribute :inbound_country do |object|

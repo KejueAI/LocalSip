@@ -42,7 +42,7 @@ class UpdateSIPTrunk < ApplicationWorkflow
   end
 
   def gateway_params_changed?
-    %i[username password outbound_host].any? { |attr| attribute_changed?(attr) }
+    %i[username password outbound_host outbound_proxy auth_user].any? { |attr| attribute_changed?(attr) }
   end
 
   def recreate_gateway
@@ -52,17 +52,29 @@ class UpdateSIPTrunk < ApplicationWorkflow
 
   def create_gateway
     host, port = parse_host_and_port(sip_trunk.outbound_host)
+    realm = host
+    register_proxy = port ? "#{host}:#{port}" : host
+
+    if sip_trunk.outbound_proxy.present?
+      ob_host, ob_port = parse_host_and_port(sip_trunk.outbound_proxy)
+      network_proxy = ob_port ? "#{ob_host}:#{ob_port}" : ob_host
+    else
+      network_proxy = register_proxy
+    end
 
     connection = switch_connection
     connection.post("/gateways") do |req|
       req.headers["Content-Type"] = "application/json"
-      req.body = {
+      body = {
         name: sip_trunk.id,
         username: username,
         password: password,
-        realm: host,
-        proxy: port ? "#{host}:#{port}" : host
-      }.to_json
+        realm: realm,
+        proxy: network_proxy,
+        outbound_proxy: network_proxy
+      }
+      body[:auth_username] = sip_trunk.auth_user if sip_trunk.auth_user.present?
+      req.body = body.to_json
     end
   end
 
