@@ -12,6 +12,7 @@ COPY somleng_patches/app/controllers/dashboard/sip_trunks_controller.rb /rails/a
 COPY somleng_patches/app/views/dashboard/sip_trunks/_form.html.erb /rails/app/views/dashboard/sip_trunks/_form.html.erb
 COPY somleng_patches/app/views/dashboard/sip_trunks/show.html.erb /rails/app/views/dashboard/sip_trunks/show.html.erb
 COPY somleng_patches/app/javascript/controllers/sip_trunks_controller.js /rails/app/javascript/controllers/sip_trunks_controller.js
+COPY somleng_patches/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb /rails/db/migrate/20260217120000_add_outbound_proxy_and_auth_user_to_sip_trunks.rb
 USER root
 RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /rails/config/routes.rb
 USER rails
