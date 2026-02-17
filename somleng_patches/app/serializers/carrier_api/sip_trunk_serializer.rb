@@ -12,7 +12,11 @@ module CarrierAPI
       object.inbound_source_ips
     end
 
-    attribute :username, if: proc { |record| record.authentication_mode.client_credentials? }
-    attribute :password, if: proc { |record| record.authentication_mode.client_credentials? }
+    attribute :username, if: proc { |record|
+      record.authentication_mode.client_credentials? || record.authentication_mode.outbound_registration?
+    }
+    attribute :password, if: proc { |record|
+      record.authentication_mode.client_credentials? || record.authentication_mode.outbound_registration?
+    }
   end
 end
