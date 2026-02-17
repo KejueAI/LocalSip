@@ -24,7 +24,9 @@ class DeleteSIPTrunk < ApplicationWorkflow
   end
 
   def delete_gateway
-    connection = Faraday.new(url: switch_host)
+    connection = Faraday.new(url: switch_host) do |f|
+      f.request :authorization, :basic, CallService.configuration.username, CallService.configuration.password
+    end
     connection.delete("/gateways/#{sip_trunk.id}")
   end
 end

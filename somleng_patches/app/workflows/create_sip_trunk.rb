@@ -26,7 +26,9 @@ class CreateSIPTrunk < ApplicationWorkflow
   def create_gateway
     host, port = parse_host_and_port(sip_trunk.outbound_host)
 
-    connection = Faraday.new(url: switch_host)
+    connection = Faraday.new(url: switch_host) do |f|
+      f.request :authorization, :basic, CallService.configuration.username, CallService.configuration.password
+    end
     connection.post("/gateways") do |req|
       req.headers["Content-Type"] = "application/json"
       req.body = {

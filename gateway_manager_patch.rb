@@ -1,5 +1,6 @@
 require "fileutils"
 require "socket"
+require "timeout"
 
 GATEWAY_DIR = ENV.fetch("SIP_GATEWAY_DIR", "/sip_gateways")
 FS_ESL_HOST = ENV.fetch("FS_ESL_HOST", "freeswitch")
@@ -36,7 +37,10 @@ module SomlengAdhearsion
         FileUtils.mkdir_p(GATEWAY_DIR)
         File.write(File.join(GATEWAY_DIR, "#{name}.xml"), gateway_xml)
 
-        freeswitch_command("sofia profile nat_gateway rescan")
+        # Trigger rescan in background thread so it doesn't block the response
+        Thread.new do
+          freeswitch_command("sofia profile nat_gateway rescan")
+        end
 
         status 201
         json(name: name, status: "created")
@@ -48,7 +52,9 @@ module SomlengAdhearsion
 
         if File.exist?(file_path)
           File.delete(file_path)
-          freeswitch_command("sofia profile nat_gateway killgw #{name}")
+          Thread.new do
+            freeswitch_command("sofia profile nat_gateway killgw #{name}")
+          end
         end
 
         status 204
@@ -57,30 +63,35 @@ module SomlengAdhearsion
       private
 
       def freeswitch_command(command)
-        socket = TCPSocket.new(FS_ESL_HOST, FS_ESL_PORT)
-        # Read auth request
-        socket.gets until socket.gets&.strip&.empty?
-        # Authenticate
-        socket.write("auth #{FS_ESL_PASSWORD}\n\n")
-        socket.gets until socket.gets&.strip&.empty?
-        # Send command
-        socket.write("api #{command}\n\n")
-        # Read response
-        response = ""
-        while (line = socket.gets)
-          break if line.strip.empty? && response.include?("Content-Length")
-          response += line
+        Timeout.timeout(5) do
+          socket = TCPSocket.new(FS_ESL_HOST, FS_ESL_PORT)
+          # Read until we get Content-Type header block
+          read_until_blank_line(socket)
+          # Authenticate
+          socket.write("auth #{FS_ESL_PASSWORD}\n\n")
+          read_until_blank_line(socket)
+          # Send command
+          socket.write("api #{command}\n\n")
+          # Read response headers
+          headers = read_until_blank_line(socket)
+          if headers.include?("Content-Length")
+            content_length = headers.match(/Content-Length:\s*(\d+)/)[1].to_i
+            result = socket.read(content_length)
+            logger.info("FreeSWITCH response: #{result.strip}")
+          end
+          socket.close
         end
-        if response.include?("Content-Length")
-          content_length = response.match(/Content-Length: (\d+)/)[1].to_i
-          result = socket.read(content_length)
-          logger.info("FreeSWITCH response: #{result.strip}")
-        end
-        socket.close
       rescue => e
-        logger.warn("FreeSWITCH ESL command failed: #{e.message}")
-      ensure
-        socket&.close rescue nil
+        logger.warn("FreeSWITCH ESL command failed: #{e.class}: #{e.message}")
+      end
+
+      def read_until_blank_line(socket)
+        lines = ""
+        while (line = socket.gets)
+          lines += line
+          break if line.strip.empty?
+        end
+        lines
       end
     end
   end

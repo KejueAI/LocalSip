@@ -53,7 +53,7 @@ class UpdateSIPTrunk < ApplicationWorkflow
   def create_gateway
     host, port = parse_host_and_port(sip_trunk.outbound_host)
 
-    connection = Faraday.new(url: switch_host)
+    connection = switch_connection
     connection.post("/gateways") do |req|
       req.headers["Content-Type"] = "application/json"
       req.body = {
@@ -67,8 +67,13 @@ class UpdateSIPTrunk < ApplicationWorkflow
   end
 
   def delete_gateway
-    connection = Faraday.new(url: switch_host)
-    connection.delete("/gateways/#{sip_trunk.id}")
+    switch_connection.delete("/gateways/#{sip_trunk.id}")
+  end
+
+  def switch_connection
+    Faraday.new(url: switch_host) do |f|
+      f.request :authorization, :basic, CallService.configuration.username, CallService.configuration.password
+    end
   end
 
   def update_subscriber
