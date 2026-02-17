@@ -79,8 +79,6 @@ class SIPTrunkForm
       self.host = nil
       self.username = nil
       self.password = nil
-    elsif authentication_mode.outbound_registration?
-      self.source_ip_addresses = nil
     end
 
     attrs = {
