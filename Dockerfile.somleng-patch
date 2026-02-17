@@ -1,6 +1,6 @@
 FROM ghcr.io/somleng/somleng
-COPY somleng_patches/app/controllers/carrier_api/v1/sip_trunks_controller.rb /app/app/controllers/carrier_api/v1/sip_trunks_controller.rb
-COPY somleng_patches/app/serializers/carrier_api/sip_trunk_serializer.rb /app/app/serializers/carrier_api/sip_trunk_serializer.rb
-COPY somleng_patches/app/request_schemas/carrier_api/sip_trunk_request_schema.rb /app/app/request_schemas/carrier_api/sip_trunk_request_schema.rb
-COPY somleng_patches/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb /app/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb
-RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /app/config/routes.rb
+COPY somleng_patches/app/controllers/carrier_api/v1/sip_trunks_controller.rb /rails/app/controllers/carrier_api/v1/sip_trunks_controller.rb
+COPY somleng_patches/app/serializers/carrier_api/sip_trunk_serializer.rb /rails/app/serializers/carrier_api/sip_trunk_serializer.rb
+COPY somleng_patches/app/request_schemas/carrier_api/sip_trunk_request_schema.rb /rails/app/request_schemas/carrier_api/sip_trunk_request_schema.rb
+COPY somleng_patches/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb /rails/app/request_schemas/carrier_api/update_sip_trunk_request_schema.rb
+RUN sed -i '/resources :phone_numbers, only:.*index create show update destroy/a\        resources :sip_trunks, only: %i[index create show update destroy]' /rails/config/routes.rb
