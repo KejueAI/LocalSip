@@ -1,0 +1,8 @@
+FROM ghcr.io/somleng/freeswitch
+
+# Install mod_conference (may already be in the base image)
+RUN apt-get update && apt-get install -y freeswitch-mod-conference 2>/dev/null; rm -rf /var/lib/apt/lists/*
+
+# Override modules config to load mod_conference
+COPY freeswitch_configs/modules_override.conf.xml /etc/freeswitch/autoload_configs/modules.conf.xml
+COPY freeswitch_configs/conference.conf.xml /etc/freeswitch/autoload_configs/conference.conf.xml
