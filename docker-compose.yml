@@ -183,7 +183,9 @@ services:
       retries: 10
 
   freeswitch:
-    image: ghcr.io/somleng/freeswitch
+    build:
+      context: .
+      dockerfile: Dockerfile.freeswitch-patch
     environment:
       - FS_DATABASE_HOST=db
       - FS_MOD_JSON_CDR_URL=http://api.somleng.dev:3000/services/call_data_records
