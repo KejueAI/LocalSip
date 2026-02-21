@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: somleng-switch
+  namespace: somleng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: somleng-switch
+  template:
+    metadata:
+      labels:
+        app: somleng-switch
+    spec:
+      containers:
+        - name: somleng-switch
+          image: localsip/switch:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AHN_CORE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: FS_ESL_HOST
+            - name: AHN_CORE_HTTP_PORT
+              value: "8080"
+            - name: CALL_PLATFORM_HOST
+              value: "http://somleng-api.somleng.svc.cluster.local:3000"
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: REDIS_URL_SWITCH
+            - name: SIP_GATEWAY_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: SIP_GATEWAY_DIR
+            - name: FS_ESL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: FS_ESL_HOST
+            - name: FS_ESL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: FS_ESL_PORT
+            - name: FS_ESL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: FS_ESL_PASSWORD
+          volumeMounts:
+            - name: sip-gateways
+              mountPath: /sip_gateways
+          readinessProbe:
+            httpGet:
+              path: /health_checks
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: sip-gateways
+          persistentVolumeClaim:
+            claimName: sip-gateways
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: somleng-switch
+  namespace: somleng
+spec:
+  selector:
+    app: somleng-switch
+  ports:
+    - port: 8080
+      targetPort: 8080

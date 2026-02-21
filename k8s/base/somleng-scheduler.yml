@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: somleng-scheduler
+  namespace: somleng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: somleng-scheduler
+  template:
+    metadata:
+      labels:
+        app: somleng-scheduler
+    spec:
+      containers:
+        - name: somleng-scheduler
+          image: localsip/somleng:latest
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c", "while true; do bundle exec rails runner 'PerMinuteJob.perform_later'; sleep 60; done"]
+          envFrom:
+            - configMapRef:
+                name: somleng-config
+          env:
+            - name: ACTIVE_JOB_QUEUE_ADAPTER
+              value: "inline"
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: POSTGRES_PASSWORD
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: SECRET_KEY_BASE
+            - name: ANYCABLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: ANYCABLE_SECRET
+            - name: RATING_ENGINE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: RATING_ENGINE_PASSWORD
+            - name: CALL_SERVICE_DEFAULT_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: SWITCH_HOST
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

@@ -1,0 +1,140 @@
+# =============================================================================
+# FreeSWITCH — SIP/RTP Media Gateway
+# =============================================================================
+# IMPORTANT: FreeSWITCH uses hostNetwork: true because:
+#   1. SIP signaling (UDP 5060) requires a known, stable public IP
+#   2. RTP media streams use dynamic UDP ports that don't work through kube-proxy
+#   3. SIP ALG / NAT traversal is fragile through multiple layers of NAT
+#
+# This means:
+#   - FreeSWITCH binds directly to the node's network interfaces
+#   - Only ONE FreeSWITCH pod per node (enforced by DaemonSet or anti-affinity)
+#   - The node's IP IS the SIP IP — set FS_EXTERNAL_SIP_IP to the node's public IP
+#   - Port 5060/udp and 8021/tcp are consumed on the host
+#
+# For multi-node setups, use a DaemonSet with node selectors to pin
+# FreeSWITCH to specific "media nodes" with known public IPs.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freeswitch
+  namespace: somleng
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Only one FS instance per node
+  selector:
+    matchLabels:
+      app: freeswitch
+  template:
+    metadata:
+      labels:
+        app: freeswitch
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet  # Still resolve k8s services
+      # Pin to a specific node with label: somleng/role=media
+      nodeSelector:
+        somleng/role: media
+      containers:
+        - name: freeswitch
+          image: localsip/freeswitch:latest
+          imagePullPolicy: Always
+          env:
+            - name: FS_DATABASE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: DATABASE_HOST
+            - name: FS_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: POSTGRES_PASSWORD
+            - name: FS_MOD_JSON_CDR_URL
+              value: "http://somleng-api.somleng.svc.cluster.local:3000/services/call_data_records"
+            - name: FS_EXTERNAL_SIP_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: FS_EXTERNAL_SIP_IP
+            - name: FS_EXTERNAL_RTP_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: FS_EXTERNAL_RTP_IP
+          volumeMounts:
+            - name: nat-gateway-profile
+              mountPath: /etc/freeswitch/sip_profiles/nat_gateway.xml
+              subPath: nat_gateway.xml
+            - name: sip-gateways
+              mountPath: /etc/freeswitch/sip_profiles/nat_gateway
+          livenessProbe:
+            tcpSocket:
+              port: 5222
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: 5222
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: nat-gateway-profile
+          configMap:
+            name: freeswitch-profiles
+        - name: sip-gateways
+          persistentVolumeClaim:
+            claimName: sip-gateways
+---
+# FreeSWITCH SIP profile as ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freeswitch-profiles
+  namespace: somleng
+data:
+  nat_gateway.xml: |
+    <profile name="nat_gateway">
+      <gateways>
+        <X-PRE-PROCESS cmd="include" data="nat_gateway/*.xml"/>
+      </gateways>
+      <settings>
+        <X-PRE-PROCESS cmd="include" data="shared/settings.xml"/>
+        <param name="sip-port" value="${ext_profile_nat_gateway_sip_port}"/>
+        <param name="ext-sip-ip" value="${external_sip_ip}"/>
+        <param name="ext-rtp-ip" value="${external_rtp_ip}"/>
+      </settings>
+    </profile>
+---
+# Headless service for DNS resolution within cluster
+# Since FS uses hostNetwork, other pods reach it via node IP.
+# This service provides a stable DNS name that resolves to the node IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: freeswitch
+  namespace: somleng
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless — resolves to pod IPs (= node IPs with hostNetwork)
+  selector:
+    app: freeswitch
+  ports:
+    - name: sip
+      port: 5060
+      protocol: UDP
+    - name: esl
+      port: 8021
+      protocol: TCP
+    - name: health
+      port: 5222
+      protocol: TCP

@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: somleng
+
+resources:
+  - namespace.yml
+  - configmap.yml
+  - secrets.yml
+  - shared-volumes.yml
+  - postgres.yml
+  - redis.yml
+  - somleng-api.yml
+  - somleng-scheduler.yml
+  - somleng-switch.yml
+  - freeswitch.yml
+  - anycable.yml
+  - rating-engine.yml
+  - ingress.yml

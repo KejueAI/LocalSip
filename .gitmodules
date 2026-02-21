@@ -1,0 +1,9 @@
+[submodule "vendor/somleng"]
+	path = vendor/somleng
+	url = https://github.com/somleng/somleng.git
+[submodule "vendor/somleng-switch"]
+	path = vendor/somleng-switch
+	url = https://github.com/somleng/somleng-switch.git
+[submodule "vendor/sms-gateway"]
+	path = vendor/sms-gateway
+	url = https://github.com/somleng/sms-gateway.git

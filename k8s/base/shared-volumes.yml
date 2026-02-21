@@ -1,0 +1,28 @@
+# Shared volume for SIP gateway XML files.
+# somleng-switch writes gateway configs here; FreeSWITCH reads them.
+#
+# This PVC MUST support ReadWriteMany (RWX) access mode because
+# two different pods (switch + freeswitch) mount it simultaneously.
+#
+# RWX storage options:
+#   - NFS server (on-prem, simplest)
+#   - Longhorn (k3s built-in, supports RWX)
+#   - AWS EFS (cloud)
+#   - Rook-Ceph (any cluster)
+#
+# If your cluster only supports ReadWriteOnce, deploy switch and
+# freeswitch as containers in the same pod (sidecar pattern) instead.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sip-gateways
+  namespace: somleng
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+  # Uncomment and set your storage class:
+  # storageClassName: nfs
+  # storageClassName: longhorn

@@ -1,0 +1,101 @@
+# =============================================================================
+# Production Docker Compose Overlay
+# =============================================================================
+# Use for on-prem or VPC deployments where you run containers directly.
+# Pulls pre-built patched images from a registry instead of building locally.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml --env-file .env.onprem up -d
+#
+# For VPC with managed DB/Redis, also remove db and redis services:
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml --env-file .env.vpc up -d --scale db=0 --scale redis=0
+# =============================================================================
+
+services:
+  somleng:
+    # Override: use pre-built image from registry instead of building locally
+    build: !reset null
+    image: ${SOMLENG_IMAGE:-localsip/somleng:latest}
+    environment: &somleng_production_environment
+      RAILS_ENV: production
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_USERNAME: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DASHBOARD_URL_HOST: ${DASHBOARD_URL_HOST}
+      SWITCH_HOST: ${SWITCH_HOST}
+      CALL_SERVICE_DEFAULT_HOST: ${SWITCH_HOST}
+      DB_POOL: ${DB_POOL:-30}
+      REDIS_URL: ${REDIS_URL}
+      ANYCABLE_SECRET: ${ANYCABLE_SECRET}
+      ANYCABLE_BROADCAST_ADAPTER: ${ANYCABLE_BROADCAST_ADAPTER:-redisx}
+      RATING_ENGINE_HOST: ${RATING_ENGINE_HOST}
+      RATING_ENGINE_USERNAME: ${RATING_ENGINE_USERNAME}
+      RATING_ENGINE_PASSWORD: ${RATING_ENGINE_PASSWORD}
+      STUB_RATING_ENGINE: ${STUB_RATING_ENGINE:-false}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+    command:
+      - "./bin/rails"
+      - "server"
+      - "-b"
+      - "0.0.0.0"
+      - "-e"
+      - "production"
+
+  somleng-bootstrap:
+    build: !reset null
+    image: ${SOMLENG_IMAGE:-localsip/somleng:latest}
+    environment:
+      <<: *somleng_production_environment
+
+  somleng-scheduler:
+    build: !reset null
+    image: ${SOMLENG_IMAGE:-localsip/somleng:latest}
+    environment:
+      <<: *somleng_production_environment
+      ACTIVE_JOB_QUEUE_ADAPTER: "inline"
+
+  anycable:
+    build: !reset null
+    image: ${SOMLENG_IMAGE:-localsip/somleng:latest}
+    environment:
+      <<: *somleng_production_environment
+      ANYCABLE_RPC_HOST: 0.0.0.0:50051
+      ANYCABLE_DEBUG: 0
+
+  ws:
+    environment:
+      ANYCABLE_DEBUG: 0
+      ANYCABLE_LOG_LEVEL: "info"
+
+  somleng-switch:
+    build: !reset null
+    image: ${SWITCH_IMAGE:-localsip/switch:latest}
+    environment:
+      AHN_CORE_HOST: ${FS_ESL_HOST}
+      AHN_CORE_HTTP_PORT: 8080
+      CALL_PLATFORM_HOST: "http://${SOMLENG_API_HOST}:${SOMLENG_API_PORT:-3000}"
+      REDIS_URL: ${REDIS_URL_SWITCH}
+      SIP_GATEWAY_DIR: ${SIP_GATEWAY_DIR:-/sip_gateways}
+      FS_ESL_HOST: ${FS_ESL_HOST}
+      FS_ESL_PORT: ${FS_ESL_PORT:-8021}
+      FS_ESL_PASSWORD: ${FS_ESL_PASSWORD}
+
+  freeswitch:
+    image: ${FREESWITCH_IMAGE:-localsip/freeswitch:latest}
+    environment:
+      - FS_DATABASE_HOST=${FS_DATABASE_HOST}
+      - FS_DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      - FS_MOD_JSON_CDR_URL=http://${SOMLENG_API_HOST}:${SOMLENG_API_PORT:-3000}/services/call_data_records
+      - FS_EXTERNAL_SIP_IP=${FS_EXTERNAL_SIP_IP}
+      - FS_EXTERNAL_RTP_IP=${FS_EXTERNAL_RTP_IP}
+
+  rating-engine-api:
+    image: ${RATING_ENGINE_IMAGE:-localsip/rating-engine:latest}
+    environment:
+      STORDB_DBNAME: ${STORDB_DBNAME:-cgrates}
+      STORDB_USER: ${POSTGRES_USER}
+      STORDB_PASSWORD: ${POSTGRES_PASSWORD}
+      STORDB_HOST: ${DATABASE_HOST}
+      DATADB_HOST: ${REDIS_HOST:-redis}
+      JSON_RPC_USERNAME: ${RATING_ENGINE_USERNAME}
+      JSON_RPC_PASSWORD: ${RATING_ENGINE_PASSWORD}

@@ -1,4 +1,0 @@
-FROM ghcr.io/somleng/switch-app
-COPY call_controller_patch.rb /app/app/call_controllers/call_controller.rb
-COPY dial_string_patch.rb /app/app/models/dial_string.rb
-COPY gateway_manager_patch.rb /app/app/web/gateway_manager.rb

@@ -30,8 +30,11 @@ module SomlengAdhearsion
         params_xml << %(<param name="auth-username" value="#{auth_username}"/>) if auth_username
         params_xml << %(<param name="register" value="true"/>)
         params_xml << %(<param name="register-transport" value="udp"/>)
-        params_xml << %(<param name="expire-seconds" value="3600"/>)
+        params_xml << %(<param name="expire-seconds" value="120"/>)
         params_xml << %(<param name="retry-seconds" value="30"/>)
+        params_xml << %(<param name="ping" value="25"/>)
+        params_xml << %(<param name="ping-max" value="3"/>)
+        params_xml << %(<param name="ping-min" value="1"/>)
 
         inner_params = params_xml.map { |p| "      #{p}" }.join("\n")
         gateway_xml = <<~XML

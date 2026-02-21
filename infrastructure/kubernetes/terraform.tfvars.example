@@ -1,0 +1,66 @@
+# =============================================================================
+# LocalSip Kubernetes Deployment — Example Configuration
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is gitignored — never commit secrets.
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your values
+#   terraform init
+#   terraform plan
+#   terraform apply
+# =============================================================================
+
+# --- Cluster Authentication ---
+# Option A: Kubeconfig (default, for local/on-prem)
+# kubeconfig_path    = "~/.kube/config"
+# kubeconfig_context = "my-cluster"
+
+# Option B: Direct auth (for CI/CD)
+# cluster_host           = "https://my-cluster-api.example.com"
+# cluster_ca_certificate = "..."
+# cluster_token          = "..."
+
+# --- Container Images ---
+# Override if pushing to a private registry (ECR, GCR, ACR, Harbor, etc.)
+# somleng_image       = "123456789.dkr.ecr.ap-southeast-1.amazonaws.com/somleng:latest"
+# switch_image        = "123456789.dkr.ecr.ap-southeast-1.amazonaws.com/switch:latest"
+# freeswitch_image    = "123456789.dkr.ecr.ap-southeast-1.amazonaws.com/freeswitch:latest"
+# rating_engine_image = "123456789.dkr.ecr.ap-southeast-1.amazonaws.com/rating-engine:latest"
+
+# --- Infrastructure Services ---
+# Set to false when using managed DB/Redis (RDS, Cloud SQL, ElastiCache, etc.)
+# deploy_postgres = false
+# deploy_redis    = false
+# database_host   = "my-rds-endpoint.amazonaws.com"
+# redis_host      = "my-elasticache-endpoint.amazonaws.com"
+
+# --- Domains ---
+api_domain         = "api.yourdomain.com"
+ws_domain          = "ws.yourdomain.com"
+dashboard_url_host = "https://dashboard.yourdomain.com"
+
+# --- FreeSWITCH (REQUIRED) ---
+# Public IP of the node labeled somleng/role=media
+fs_external_sip_ip = "CHANGE_ME"
+fs_external_rtp_ip = "CHANGE_ME"
+
+# --- Secrets (REQUIRED — change all of these) ---
+postgres_password      = "CHANGE_ME"
+secret_key_base        = "CHANGE_ME"
+fs_esl_password        = "CHANGE_ME"
+anycable_secret        = "CHANGE_ME"
+rating_engine_password = "CHANGE_ME"
+
+# --- Storage ---
+# Set storage classes appropriate for your cluster
+# postgres_storage_class     = "standard"
+# sip_gateways_storage_class = "nfs"  # Must support ReadWriteMany
+
+# --- Ingress ---
+# ingress_class_name      = "nginx"
+# ingress_tls_secret_name = "somleng-tls"
+# ingress_annotations = {
+#   "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
+# }

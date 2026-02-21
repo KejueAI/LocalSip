@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-engine
+  namespace: somleng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-engine
+  template:
+    metadata:
+      labels:
+        app: rating-engine
+    spec:
+      containers:
+        - name: rating-engine
+          image: localsip/rating-engine:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 2080
+          env:
+            - name: STORDB_DBNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: STORDB_DBNAME
+            - name: STORDB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: POSTGRES_USER
+            - name: STORDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: POSTGRES_PASSWORD
+            - name: STORDB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: DATABASE_HOST
+            - name: STORDB_PORT
+              value: "5432"
+            - name: DATADB_HOST
+              value: "redis.somleng.svc.cluster.local"
+            - name: DATADB_USER
+              value: ""
+            - name: DATADB_PORT
+              value: "6379"
+            - name: DATADB_DBNAME
+              value: "2"
+            - name: CONNECTION_MODE
+              value: "*localhost"
+            - name: LOG_LEVEL
+              value: "7"
+            - name: HTTP_LISTEN_ADDRESS
+              value: "0.0.0.0:2080"
+            - name: BOOTSTRAP_DB
+              value: "true"
+            - name: SERVER_MODE
+              value: "api"
+            - name: JSON_RPC_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: RATING_ENGINE_USERNAME
+            - name: JSON_RPC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: RATING_ENGINE_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["/usr/local/bin/docker-healthcheck.sh"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-engine
+  namespace: somleng
+spec:
+  selector:
+    app: rating-engine
+  ports:
+    - port: 2080
+      targetPort: 2080

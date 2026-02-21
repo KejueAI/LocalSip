@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: somleng-config
+  namespace: somleng
+data:
+  # --- External SIP/RTP ---
+  # Override per-deployment: your node's public IP or SBC IP
+  FS_EXTERNAL_SIP_IP: "CHANGE_ME"
+  FS_EXTERNAL_RTP_IP: "CHANGE_ME"
+
+  # --- Database ---
+  DATABASE_HOST: "postgres.somleng.svc.cluster.local"
+  DATABASE_USERNAME: "somleng"
+  POSTGRES_USER: "somleng"
+
+  # --- Redis ---
+  REDIS_URL: "redis://redis.somleng.svc.cluster.local:6379/0"
+  REDIS_URL_SWITCH: "redis://redis.somleng.svc.cluster.local:6379/1"
+
+  # --- Somleng API ---
+  RAILS_ENV: "production"
+  SOMLENG_API_HOST: "somleng-api.somleng.svc.cluster.local"
+  SOMLENG_API_PORT: "3000"
+  DASHBOARD_URL_HOST: "https://dashboard.yourdomain.com"
+  DB_POOL: "30"
+
+  # --- Switch ---
+  SWITCH_HOST: "http://somleng-switch.somleng.svc.cluster.local:8080"
+  FS_ESL_HOST: "freeswitch.somleng.svc.cluster.local"
+  FS_ESL_PORT: "8021"
+  SIP_GATEWAY_DIR: "/sip_gateways"
+
+  # --- Rating Engine ---
+  RATING_ENGINE_HOST: "http://rating-engine.somleng.svc.cluster.local:2080"
+  RATING_ENGINE_USERNAME: "cgrates"
+  STUB_RATING_ENGINE: "false"
+  STORDB_DBNAME: "cgrates"
+
+  # --- AnyCable ---
+  ANYCABLE_BROADCAST_ADAPTER: "redisx"

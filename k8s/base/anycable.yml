@@ -1,0 +1,149 @@
+# AnyCable RPC (Ruby gRPC server)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anycable-rpc
+  namespace: somleng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anycable-rpc
+  template:
+    metadata:
+      labels:
+        app: anycable-rpc
+    spec:
+      containers:
+        - name: anycable-rpc
+          image: localsip/somleng:latest
+          imagePullPolicy: Always
+          command: ["bundle", "exec", "anycable"]
+          ports:
+            - containerPort: 50051
+          envFrom:
+            - configMapRef:
+                name: somleng-config
+          env:
+            - name: ANYCABLE_RPC_HOST
+              value: "0.0.0.0:50051"
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: POSTGRES_PASSWORD
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: SECRET_KEY_BASE
+            - name: ANYCABLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: ANYCABLE_SECRET
+          readinessProbe:
+            exec:
+              command: ["grpc-health-probe", "-addr", ":50051"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anycable-rpc
+  namespace: somleng
+spec:
+  selector:
+    app: anycable-rpc
+  ports:
+    - port: 50051
+      targetPort: 50051
+---
+# AnyCable WebSocket (Go server)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anycable-ws
+  namespace: somleng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anycable-ws
+  template:
+    metadata:
+      labels:
+        app: anycable-ws
+    spec:
+      containers:
+        - name: anycable-ws
+          image: anycable/anycable-go:latest-alpine
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: somleng-config
+                  key: REDIS_URL
+            - name: ANYCABLE_HOST
+              value: "0.0.0.0"
+            - name: ANYCABLE_PORT
+              value: "8080"
+            - name: ANYCABLE_DISABLE_TELEMETRY
+              value: "true"
+            - name: ANYCABLE_RPC_HOST
+              value: "anycable-rpc.somleng.svc.cluster.local:50051"
+            - name: ANYCABLE_BROADCAST_ADAPTER
+              value: "redisx"
+            - name: ANYCABLE_BROKER
+              value: "memory"
+            - name: ANYCABLE_PUBSUB
+              value: "redis"
+            - name: ANYCABLE_HEADERS
+              value: "x-device-key"
+            - name: ANYCABLE_HEALTH_PATH
+              value: "/health"
+            - name: ANYCABLE_LOG_LEVEL
+              value: "info"
+            - name: ANYCABLE_LOG_FORMAT
+              value: "json"
+            - name: ANYCABLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: somleng-secrets
+                  key: ANYCABLE_SECRET
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anycable-ws
+  namespace: somleng
+spec:
+  selector:
+    app: anycable-ws
+  ports:
+    - port: 8080
+      targetPort: 8080

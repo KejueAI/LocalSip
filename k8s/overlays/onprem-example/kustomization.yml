@@ -1,0 +1,68 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Inherit all base resources
+resources:
+  - ../../base
+
+# Override images with your private registry
+images:
+  - name: localsip/somleng
+    newName: registry.yourdomain.com/localsip/somleng
+    newTag: latest
+  - name: localsip/switch
+    newName: registry.yourdomain.com/localsip/switch
+    newTag: latest
+  - name: localsip/freeswitch
+    newName: registry.yourdomain.com/localsip/freeswitch
+    newTag: latest
+  - name: localsip/rating-engine
+    newName: registry.yourdomain.com/localsip/rating-engine
+    newTag: latest
+
+# Patch the ConfigMap with site-specific values
+patches:
+  - target:
+      kind: ConfigMap
+      name: somleng-config
+    patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: somleng-config
+      data:
+        FS_EXTERNAL_SIP_IP: "203.0.113.10"
+        FS_EXTERNAL_RTP_IP: "203.0.113.10"
+        DASHBOARD_URL_HOST: "https://dashboard.yourdomain.com"
+
+  # Update ingress hostnames
+  - target:
+      kind: Ingress
+      name: somleng
+    patch: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: somleng
+      spec:
+        rules:
+          - host: api.yourdomain.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: somleng-api
+                      port:
+                        number: 3000
+          - host: ws.yourdomain.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: anycable-ws
+                      port:
+                        number: 8080

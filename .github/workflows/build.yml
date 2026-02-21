@@ -8,15 +8,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
-      # Avoid rate limit errors by logging into Docker registries
+      # Login to registries for base images (postgres, redis, alpine, etc.)
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      # Login to AWS to avoid rate limit
       - name: Configure AWS credentials
         id: aws-login
         uses: aws-actions/configure-aws-credentials@v6
@@ -34,6 +35,12 @@ jobs:
           registry: public.ecr.aws
         env:
           AWS_REGION: us-east-1
+
+      # Build all images from source
+      - name: Build images from source
+        run: make build-no-fs
+        env:
+          IMAGE_PREFIX: localsip
 
       - name: Bootstrap DB
         id: bootstrap_db
@@ -58,10 +65,10 @@ jobs:
 
       - name: Test an outbound call
         run: |
-          response=$(mktemp)
+          response_file=$(mktemp)
 
           http_code=$(curl -s \
-            -o "$response" \
+            -o "$response_file" \
             -w "%{http_code}" \
             -X POST "http://api.lvh.me:3000/2010-04-01/Accounts/${{ steps.bootstrap_db.outputs.account_sid }}/Calls" \
             -H 'Content-Type: application/x-www-form-urlencoded; charset=utf-8' \
@@ -127,7 +134,7 @@ jobs:
 
           for i in $(seq 1 $MAX_RETRIES); do
             if docker compose logs sms-gateway | grep -q "$MESSAGE"; then
-              echo "✅ Message received in logs!"
+              echo "Message received in logs!"
               FOUND=1
               break
             fi
@@ -136,7 +143,7 @@ jobs:
           done
 
           if [ $FOUND -eq 0 ]; then
-            echo "❌ Message not found in SMS Gateway logs after $((MAX_RETRIES * SLEEP_INTERVAL)) seconds."
+            echo "Message not found in SMS Gateway logs after $((MAX_RETRIES * SLEEP_INTERVAL)) seconds."
             echo "Dumping full SMS Gateway logs for debugging:"
             docker compose logs sms-gateway
             exit 1
@@ -155,7 +162,7 @@ jobs:
             price=$(echo $response | jq -r '.price')
 
             if [ "$price" != "null" ]; then
-              echo "✅ Pricing updated!"
+              echo "Pricing updated!"
               FOUND=1
               break
             fi
@@ -165,7 +172,7 @@ jobs:
           done
 
           if [ $FOUND -eq 0 ]; then
-            echo "❌ Pricing not updated after $((MAX_RETRIES * SLEEP_INTERVAL)) seconds."
+            echo "Pricing not updated after $((MAX_RETRIES * SLEEP_INTERVAL)) seconds."
             echo "Dumping full response for debugging:"
             echo $response
             exit 1
@@ -179,6 +186,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -189,6 +198,100 @@ jobs:
           role-skip-session-tagging: true
           role-duration-seconds: 3600
           aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to AWS Public ECR
+        uses: docker/login-action@v3
+        with:
+          registry: public.ecr.aws
+        env:
+          AWS_REGION: us-east-1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      # Build all images from source and push to ECR
+      - name: Build all images
+        run: |
+          make build-no-fs REGISTRY=${{ steps.ecr-login.outputs.registry }} TAG=latest
+          make build-no-fs REGISTRY=${{ steps.ecr-login.outputs.registry }} TAG=sha-${{ github.sha }}
+
+      # Build FreeSWITCH separately (requires SignalWire token)
+      - name: Build FreeSWITCH
+        if: ${{ secrets.SIGNALWIRE_TOKEN != '' }}
+        run: |
+          make build-freeswitch REGISTRY=${{ steps.ecr-login.outputs.registry }} TAG=latest SIGNALWIRE_TOKEN=${{ secrets.SIGNALWIRE_TOKEN }}
+          make build-freeswitch REGISTRY=${{ steps.ecr-login.outputs.registry }} TAG=sha-${{ github.sha }} SIGNALWIRE_TOKEN=${{ secrets.SIGNALWIRE_TOKEN }}
+
+      - name: Push images to ECR
+        run: |
+          REGISTRY=${{ steps.ecr-login.outputs.registry }}
+          for img in somleng switch rating-engine; do
+            docker push $REGISTRY/$img:latest
+            docker push $REGISTRY/$img:sha-${{ github.sha }}
+          done
+          # Push FreeSWITCH if it was built
+          if docker image inspect $REGISTRY/freeswitch:latest > /dev/null 2>&1; then
+            docker push $REGISTRY/freeswitch:latest
+            docker push $REGISTRY/freeswitch:sha-${{ github.sha }}
+          fi
+
+      # Update ECS services to pick up new images
+      - name: Update ECS somleng-api service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service somleng-api \
+            --force-new-deployment
+
+      - name: Update ECS somleng-scheduler service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service somleng-scheduler \
+            --force-new-deployment
+
+      - name: Update ECS anycable-rpc service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service anycable-rpc \
+            --force-new-deployment
+
+      - name: Update ECS somleng-switch service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service somleng-switch \
+            --force-new-deployment
+
+      - name: Update ECS freeswitch service
+        if: ${{ secrets.SIGNALWIRE_TOKEN != '' }}
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service freeswitch \
+            --force-new-deployment
+
+      - name: Update ECS anycable-ws service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service anycable-ws \
+            --force-new-deployment
+
+      - name: Update ECS rating-engine service
+        run: |
+          aws ecs update-service \
+            --cluster somleng \
+            --service rating-engine \
+            --force-new-deployment
 
       - name: Deploy Website
         run: |

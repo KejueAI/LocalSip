@@ -1,0 +1,51 @@
+# Ingress for HTTP/HTTPS traffic
+# Works with nginx-ingress, traefik, or any standard ingress controller.
+# For k3s: traefik is built-in. For kubeadm: install nginx-ingress.
+#
+# NOTE: SIP (UDP 5060) does NOT go through ingress.
+# FreeSWITCH uses hostNetwork and is reached directly on the node IP.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: somleng
+  namespace: somleng
+  annotations:
+    # Uncomment for nginx-ingress:
+    # kubernetes.io/ingress.class: nginx
+    # nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    #
+    # Uncomment for cert-manager TLS:
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    #
+    # Uncomment for traefik (k3s default):
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  # Uncomment for TLS:
+  # tls:
+  #   - hosts:
+  #       - api.yourdomain.com
+  #       - dashboard.yourdomain.com
+  #       - ws.yourdomain.com
+  #     secretName: somleng-tls
+  rules:
+    - host: api.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: somleng-api
+                port:
+                  number: 3000
+
+    - host: ws.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: anycable-ws
+                port:
+                  number: 8080
